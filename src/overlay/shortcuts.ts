@@ -28,3 +28,15 @@ export function matchesToggle(event: KeyboardEvent, shortcut: ToggleShortcut): b
   const other = isMac() ? event.ctrlKey : event.metaKey;
   return mod && !other && !event.shiftKey && !event.altKey;
 }
+
+export type PanelShortcut = 'Mod+Shift+G' | false;
+
+/** Whether `event` is the panel shortcut: Cmd+Shift+G on Mac, Ctrl+Shift+G elsewhere (0005 §8). */
+export function matchesPanel(event: KeyboardEvent, shortcut: PanelShortcut): boolean {
+  if (shortcut === false || event.code !== 'KeyG' || event.repeat || event.isComposing) {
+    return false;
+  }
+  const mod = isMac() ? event.metaKey : event.ctrlKey;
+  const other = isMac() ? event.ctrlKey : event.metaKey;
+  return mod && !other && event.shiftKey && !event.altKey;
+}

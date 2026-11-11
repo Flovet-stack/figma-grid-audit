@@ -17,4 +17,4 @@ export type {
   Pattern,
 } from './engine/types';
 export { createGridOverlay, type GridOverlay, type GridOverlayOptions } from './overlay/create';
-export type { ToggleShortcut } from './overlay/shortcuts';
+export type { PanelShortcut, ToggleShortcut } from './overlay/shortcuts';

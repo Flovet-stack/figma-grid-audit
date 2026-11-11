@@ -50,6 +50,15 @@ createGridOverlay({
 - `DEFAULT_BREAKPOINTS` is exported (read-only) if you want to copy it.
 - Two breakpoints with the same `minWidth` are an error.
 
+## Control panel
+
+Press **Ctrl+Shift+G** (**Cmd+Shift+G** on Mac) to open the panel. It shows the active breakpoint and lets you edit its grids the way Figma's Layout guides section does: type, count, alignment, width, gutter, margin or offset, colour and opacity. You can also add, remove, show and hide grids. Changes appear straight away.
+
+- Arrow keys change a value by 1, and Shift+arrow by 10. Enter or leaving the field applies it.
+- Panel edits are lost on reload for now. Calling `update()` or `setBreakpoints()` from code replaces them.
+- `overlay.openPanel()`, `overlay.closePanel()` and `overlay.isPanelOpen()` control it from code.
+- `shortcuts: { panel: false }` turns the shortcut off.
+
 ## Development
 
 Requires Node 24 and pnpm 11.

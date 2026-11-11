@@ -112,6 +112,8 @@ References are for inspiration only: never copy their logos, names, icons, illus
 
 Product-wide decisions only. Every decision, with its research, is logged in `docs/decisions/`.
 
+- 2026-11-11: The control panel's grid settings come first, so users can enter and adjust grids on the page; then persisting panel edits, then 0011's features (0012).
+- 2026-11-11: Build order after spec 02: geometry inspector, page comparison (element edges vs the expected page grid per breakpoint), then a DevTools-style container layout overlay; the release waits until after them. Container comparison comes later (0011).
 - 2026-11-11: Product renamed from "Figma Grid Audit" to **Grid Auditor** (`grid-auditor`): Figma's trademark rules forbid "Figma" in a tool's name. We say "works with Figma layout grids" and "not affiliated with Figma" (0008).
 
 - 2026-11-11: Design system approved (`docs/design/design-brief.md`, 0005): Figma's behaviour with our own neutral chrome; expected grid filled red, rendered grid dashed blue-violet, deviations magenta with px labels; Shift+G toggles the grid.
