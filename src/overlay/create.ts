@@ -242,6 +242,19 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     },
     { signal, capture: true },
   );
+  // Keys typed in the panel stay in the panel (spec 03): run its handlers here, then stop the
+  // event so no page key listener added after the overlay sees it. Default actions still run.
+  for (const type of ['keydown', 'keyup', 'keypress'] as const) {
+    window.addEventListener(
+      type,
+      (event) => {
+        if (!panel.owns(event)) return;
+        panel.handleKey(event);
+        event.stopImmediatePropagation();
+      },
+      { signal, capture: true },
+    );
+  }
 
   const observer = new ResizeObserver(() => schedule(true));
   observer.observe(document.documentElement);

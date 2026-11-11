@@ -33,6 +33,13 @@ export interface Panel {
   isOpen(): boolean;
   /** Keeps the panel inside the viewport after a resize. */
   clamp(): void;
+  /** True when the event started inside the panel. */
+  owns(event: Event): boolean;
+  /**
+   * Runs the panel's own key handling. The overlay calls this from its window capture
+   * listener, then stops the event so the page's key listeners never see panel typing.
+   */
+  handleKey(event: KeyboardEvent): void;
 }
 
 export const PANEL_STYLES = `
@@ -87,7 +94,7 @@ button:hover { background: var(--ga-raised); }
 button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5;
   stroke-linecap: round; stroke-linejoin: round; }
 button[aria-pressed="false"] { color: var(--ga-muted); }
-select:focus-visible, button:focus-visible, .switch:focus-visible { outline: 2px solid var(--ga-accent); outline-offset: 1px; }
+.title:focus-visible, select:focus-visible, button:focus-visible, .switch:focus-visible { outline: 2px solid var(--ga-accent); outline-offset: 1px; }
 .switch { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 4px;
   border-radius: 6px; color: var(--ga-muted); font-size: 11px; }
 .switch .track { width: 24px; height: 14px; border-radius: 7px; background: var(--ga-field); position: relative; }
@@ -235,13 +242,8 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
   ]) {
     root.addEventListener(type, (e) => e.stopPropagation(), { signal });
   }
-  root.addEventListener(
-    'keydown',
-    (e) => {
-      if (e.key === 'Escape') store.close();
-    },
-    { signal },
-  );
+  /** Per-field key handlers, run by `handleKey` (the event never reaches the field's own listeners). */
+  const keyHandlers = new WeakMap<EventTarget, (e: KeyboardEvent) => void>();
   visSwitch.addEventListener('click', () => store.setVisible(!store.isVisible()), { signal });
   closeBtn.addEventListener('click', () => store.close(), { signal });
 
@@ -399,20 +401,16 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
       onCommit(input.value.trim(), key);
     };
     input.addEventListener('change', run, { signal });
-    input.addEventListener(
-      'keydown',
-      (e) => {
-        if (e.key === 'Enter') run();
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          const step = (e.shiftKey ? 10 : 1) * (e.key === 'ArrowUp' ? 1 : -1);
-          const n = Number.parseFloat(input.value);
-          input.value = String(Math.max(0, (Number.isFinite(n) ? n : stepFrom()) + step));
-          run();
-        }
-      },
-      { signal },
-    );
+    keyHandlers.set(input, (e) => {
+      if (e.key === 'Enter') run();
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const step = (e.shiftKey ? 10 : 1) * (e.key === 'ArrowUp' ? 1 : -1);
+        const n = Number.parseFloat(input.value);
+        input.value = String(Math.max(0, (Number.isFinite(n) ? n : stepFrom()) + step));
+        run();
+      }
+    });
     return wrap;
   };
 
@@ -768,5 +766,14 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
     },
     isOpen: () => !root.hidden,
     clamp: place,
+    owns: (event) => event.composedPath().includes(root),
+    handleKey(event) {
+      if (event.type !== 'keydown') return;
+      if (event.key === 'Escape') {
+        store.close();
+        return;
+      }
+      keyHandlers.get(event.composedPath()[0] as EventTarget)?.(event);
+    },
   };
 }

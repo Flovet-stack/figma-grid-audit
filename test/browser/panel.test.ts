@@ -261,11 +261,16 @@ describe('7. non-invasive with the panel open', () => {
     expect(onClick).toHaveBeenCalledOnce();
 
     const onKey = vi.fn();
+    const onCaptureKey = vi.fn();
     document.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onCaptureKey, { capture: true });
     await userEvent.click(field('g0-count'));
     await userEvent.keyboard('7');
     expect(onKey).not.toHaveBeenCalled();
+    expect(onCaptureKey).not.toHaveBeenCalled();
+    expect(field('g0-count').value).toContain('7');
     document.removeEventListener('keydown', onKey);
+    window.removeEventListener('keydown', onCaptureKey, { capture: true });
 
     const onPageClick = vi.fn();
     document.addEventListener('click', onPageClick);
@@ -303,6 +308,21 @@ describe('8. accessibility', () => {
     await userEvent.tab();
     expect(shadow().activeElement?.getAttribute('aria-label')).toMatch(/^Close panel/);
     expect(getComputedStyle(shadow().activeElement as Element).outlineStyle).toBe('solid');
+  });
+});
+
+describe('breakpoint switch with a field focused', () => {
+  it('moves focus to the panel title, which shows the accent focus ring', async () => {
+    overlay = createGridOverlay();
+    overlay.openPanel();
+    await userEvent.click(field('g0-count'));
+    await userEvent.keyboard('9');
+    await page.viewport(800, 900);
+    await frames();
+    const title = q('.title');
+    expect(shadow().activeElement).toBe(title);
+    expect(field('g0-count').value).toBe('8');
+    expect(getComputedStyle(title).outlineColor).toBe('rgb(91, 140, 255)');
   });
 });
 
