@@ -1,6 +1,6 @@
 # 02: Overlay renderer
 
-Status: Done (2026-11-11)
+Status: In progress (amendment A1 for 0010; the original scope was done 2026-11-11)
 
 Brief: features #1 (expected grid overlay), #2 (responsive breakpoints) and #25 (client-only), plus the first part of #19 (the toggle shortcut). This is the first spec a user can actually see.
 
@@ -69,6 +69,50 @@ Each test builds its own fixture page inside the test document and calls `destro
 8. **Lifecycle:** a second `createGridOverlay` returns the same object; `destroy()` leaves no host element in the document; a key press after `destroy()` doesn't throw or toggle anything; `destroy()` twice is fine.
 9. **Errors:** a breakpoint with `count: 0` throws an error whose message contains `[0].grids[0].count` and the fix text.
 
+## Amendment A1: editable default breakpoints (0010)
+
+Implements 0010. Where A1 conflicts with the criteria above, A1 wins.
+
+### Engine: `src/engine/`
+
+- [ ] `DEFAULT_BREAKPOINTS`, frozen (with nested objects frozen too), with the exact values in 0010: Mobile 0 (4 stretch, 16/16), Tablet 768 (8 stretch, 24/24) and Desktop 1200 (12 stretch, 80/24). All grids use the default colour.
+- [ ] A pure `mergeBreakpoints(defaults, input, extendDefaults)` that never mutates its inputs:
+  - An entry whose `name` matches a default is deep-merged into it: a field the entry leaves out keeps the default value, and `grids` merge index by index.
+  - An entry with a new `name` is added. If it has no `minWidth` or no grids, the error names the field and gives the fix.
+  - With `extendDefaults: false`, the input is used as it is.
+  - The output is sorted by `minWidth`. If two breakpoints share a `minWidth`, one error names both.
+  - The output then goes through `normalizeBreakpoints` as before.
+- [ ] Unit tests cover: no input (gives the defaults); editing one field of Desktop; adding a 1024 breakpoint between Tablet and Desktop; the opt-out; a duplicate `minWidth`; a new breakpoint with no `minWidth`; inputs left unmutated. Coverage of `src/engine` stays at 100%.
+
+### Public API
+
+- [ ] `createGridOverlay(options?)`: `options` and `breakpoints` are both optional.
+- [ ] New option: `extendDefaults?: boolean` (default `true`).
+- [ ] New method: `GridOverlay.setBreakpoints(breakpoints, { extendDefaults? })` applies the same rules and redraws on the next frame. Invalid input throws, and the old grid stays on screen. `update(options)` also goes through the merge.
+- [ ] New export: `DEFAULT_BREAKPOINTS`.
+- [ ] The no-op overlay used during server rendering also has `setBreakpoints`.
+
+### Playground
+
+- [ ] `main.ts` calls `createGridOverlay()` with no breakpoints.
+- [ ] `style.css` matches the defaults:
+  - Mobile: 4 columns, 16 px padding and gap.
+  - From 768: 8 columns, 24 px padding and gap.
+  - From 1200: 12 columns, 80 px padding, 24 px gap.
+  - These replace the old 1200 px container and 12-column layout.
+- [ ] `rows.html` stays as it is.
+
+### Tests (browser)
+
+10. **Defaults:** with no options, there are 4, 8 and 12 column elements at widths 375, 1024 and 1440, and each one's position matches the engine.
+11. **Lines up with the playground CSS:** test 2, rerun with the new playground CSS at 375, 1024 and 1440 (≤ 0.5 px).
+12. **Live edit:** `setBreakpoints([{ name: 'Desktop', grids: [{ count: 16 }] }])` at 1440 gives 16 columns after one frame, with no new host element. An invalid call throws and keeps 12 columns.
+13. Tests 2 and 6 move from the old `PLAYGROUND` config to the defaults.
+
+### Docs
+
+- [ ] README: the defaults table, editing a default, adding a breakpoint, `extendDefaults: false`, and `setBreakpoints`.
+
 ## Out of scope
 
 Rulers, guides, panel, toolbar (later specs). The rendered grid, deviations and container targets (brief #3–5). Baseline grid. The React entry and the other framework entries. `Ctrl/Cmd+Shift+G`. Persisting the visibility state.
@@ -90,7 +134,7 @@ Rulers, guides, panel, toolbar (later specs). The rendered grid, deviations and 
 ## Boundaries
 
 - Always: one shadow host; whole-pixel positions from the engine; one AbortController for every listener.
-- Ask first: any runtime dependency, any public API not listed above, any change to engine behaviour.
+- Ask first: any runtime dependency, any public API not listed above (A1 adds `extendDefaults`, `setBreakpoints` and `DEFAULT_BREAKPOINTS`), any change to engine behaviour.
 - Never: read `process.env`; touch `document.body`'s styles or attributes; call `stopPropagation`; call `preventDefault` except for `Mod+G` when it's turned on.
 
 ## Check

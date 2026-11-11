@@ -2,16 +2,6 @@
 // import, so production builds contain none of it.
 if (import.meta.env.DEV) {
   const { createGridOverlay } = await import('grid-auditor');
-  // Matches style.css: a 1200 px container with 24 px padding and a 12-column, 24 px gap grid.
-  createGridOverlay({
-    breakpoints: [
-      { minWidth: 0, grids: [{ pattern: 'COLUMNS', count: 12, offset: 24, gutterSize: 24 }] },
-      {
-        minWidth: 1200,
-        grids: [
-          { pattern: 'COLUMNS', alignment: 'CENTER', count: 12, sectionSize: 74, gutterSize: 24 },
-        ],
-      },
-    ],
-  });
+  // The default breakpoints (0010) match style.css: 4 / 8 / 12 stretch columns.
+  createGridOverlay();
 }
