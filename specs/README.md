@@ -8,9 +8,9 @@ One file per task: `NN-short-name.md`, small enough for one agent session. Forma
 
 ## Planned (0001–0004 approved 2026-11-11)
 
-| #   | Spec                                                 | Implements       |
-| --- | ---------------------------------------------------- | ---------------- |
-| 00  | [Foundations](00-foundations.md) (Done)              | 0001, 0003, 0004 |
-| 01  | Grid engine: pure Figma-parity math + unit tests     | 0002             |
-| 02  | Overlay renderer + toggle + playground browser tests | 0002, 0003       |
-| 03  | First release 0.1.0                                  | 0003, 0004       |
+| #   | Spec                                              | Implements       |
+| --- | ------------------------------------------------- | ---------------- |
+| 00  | [Foundations](00-foundations.md) (Done)           | 0001, 0003, 0004 |
+| 01  | [Grid engine](01-grid-engine.md) (Done)           | 0002             |
+| 02  | [Overlay renderer](02-overlay-renderer.md) (Done) | 0002, 0004–0007  |
+| 03  | First release 0.1.0                               | 0003, 0004       |
