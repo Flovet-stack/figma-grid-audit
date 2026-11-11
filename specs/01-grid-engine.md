@@ -102,3 +102,9 @@ Sources: Figma Plugin API `LayoutGrid` (https://developers.figma.com/docs/plugin
 - `pnpm check` passes, and coverage for `src/engine` is 100%.
 - **Figma proof:** Flovet builds 5 frames in Figma (12-column stretch at 1440/80/24, 4-column CENTER at 80/20 in 375, 3-row MAX at 100/16/offset 24 in 800 tall, plus a 6-column MIN at 300/20 in a 1000-wide frame to check overflow and a 10 px square grid on a 95 × 95 frame to check anchoring) and reads the x/y positions with Alt-measure. The engine's output for those cases must match to 0.01 px. Their screenshots go in the PR description.
 - Workflow E review of the diff.
+
+## Accepted changes from the build (Flovet, 2026-11-11)
+
+1. A valid result is `{ ok: true, value, warnings }` (named `value`, not `grid`), so grids and breakpoint lists share one `Result` type.
+2. `computeSections` returns `{ sections, warnings }`, so a STRETCH grid that doesn't fit can carry its warning.
+3. `count` has no default: leaving it out of a COLUMNS or ROWS grid is an error.
