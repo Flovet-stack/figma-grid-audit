@@ -55,6 +55,7 @@ let fixture: HTMLElement;
 let style: HTMLStyleElement;
 
 beforeEach(async () => {
+  localStorage.clear();
   style = document.createElement('style');
   style.textContent = 'html, body { margin: 0; padding: 0; }';
   document.head.append(style);
@@ -135,7 +136,7 @@ describe('3. live edit', () => {
     commit('g0-count', '16');
     await frames();
     expect(cols()).toHaveLength(16);
-    expect(q('.badge').textContent).toBe('Desktop · 16 cols · 24 px gutter');
+    expect(q('.badge').textContent).toBe('Desktop · 16 cols · 24 px gutter · Edited');
     const r = normalizeGrid({ pattern: 'COLUMNS', count: 16, offset: 80, gutterSize: 24 });
     if (!r.ok) throw new Error('bad grid');
     const width = document.documentElement.clientWidth;
@@ -171,7 +172,7 @@ describe('3. live edit', () => {
       }),
     );
     expect(input.value).toBe('15');
-    expect(q('.badge').textContent).toBe('Desktop · 12 cols · 15 px gutter');
+    expect(q('.badge').textContent).toBe('Desktop · 12 cols · 15 px gutter · Edited');
     // Focus survives the in-place update.
     expect(shadow().activeElement).toBe(input);
   });
@@ -301,7 +302,8 @@ describe('8. accessibility', () => {
       const named =
         c.getAttribute('aria-label') ||
         c.getAttribute('aria-labelledby') ||
-        c.closest('label')?.textContent;
+        c.closest('label')?.textContent ||
+        c.textContent?.trim();
       expect(named, c.outerHTML).toBeTruthy();
     }
     q<HTMLElement>('[role="switch"]').focus();

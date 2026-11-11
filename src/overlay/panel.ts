@@ -10,6 +10,7 @@ import {
   type LayoutGrid,
   type LayoutGridInput,
 } from '../engine';
+import { type Position, toInput } from './persist';
 
 export interface PanelStore {
   breakpoints(): readonly Breakpoint[];
@@ -21,6 +22,18 @@ export interface PanelStore {
   setVisible(visible: boolean): void;
   close(): void;
   box(): Box;
+  /** Panel edits are applied (0013). */
+  isEdited(): boolean;
+  /** Saved edits were set aside because the code config changed. */
+  hasSetAside(): boolean;
+  restore(): void;
+  discard(): void;
+  /** Drops the edits and shows the code config again. */
+  reset(): void;
+  /** The "Copy config" text. */
+  snippet(): string;
+  position(): Position | undefined;
+  savePosition(position: Position): void;
 }
 
 /** Why the panel is re-syncing: code replaces everything; panel and resize keep in-progress fields. */
@@ -56,7 +69,7 @@ export const PANEL_STYLES = `
 }
 @starting-style { .panel { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .panel { transition: none; } }
-.panel[hidden] { display: none; }
+.panel[hidden], .panel [hidden] { display: none !important; }
 .panel *, .panel *::before, .panel *::after { box-sizing: border-box; }
 .head { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 8px 0 12px;
   border-bottom: 1px solid var(--ga-border); cursor: grab; user-select: none; touch-action: none; }
@@ -105,6 +118,18 @@ button[aria-pressed="false"] { color: var(--ga-muted); }
 kbd { font: 400 10px ui-monospace, monospace; color: var(--ga-muted); border: 1px solid var(--ga-border);
   border-radius: 4px; padding: 0 3px; }
 .empty { margin: 4px 12px; color: var(--ga-muted); font-size: 11px; }
+.section-head h3:focus-visible { outline: 2px solid var(--ga-accent); outline-offset: 1px; }
+.text-btn { padding: 0 8px; font-size: 11px; color: var(--ga-text); border: 1px solid var(--ga-field); }
+.notice { margin: 0 12px 8px; padding: 8px; border-radius: 6px; background: var(--ga-raised);
+  border: 1px solid var(--ga-border); font-size: 11px; line-height: 14px; }
+.notice p { margin: 0 0 6px; }
+.notice .row, .footer { display: flex; gap: 6px; align-items: center; }
+.footer { padding: 8px 12px 0; border-top: 1px solid var(--ga-border); flex-wrap: wrap; }
+.footer .status { color: var(--ga-muted); font-size: 11px; }
+.footer textarea { width: 100%; height: 120px; margin-top: 4px; resize: vertical; background: var(--ga-raised);
+  color: var(--ga-text); border: 1px solid var(--ga-field); border-radius: 6px; padding: 6px;
+  font: 400 10px/14px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.footer .note { width: 100%; margin: 4px 0 0; color: var(--ga-error); font-size: 11px; }
 `;
 
 const ICONS = {
@@ -136,23 +161,6 @@ export function badgeText(bp: Breakpoint | undefined): string {
   if (g.pattern === 'GRID') return `${name} · ${g.sectionSize} px grid`;
   const unit = g.pattern === 'COLUMNS' ? 'cols' : 'rows';
   return `${name} · ${g.count} ${unit} · ${g.gutterSize} px gutter`;
-}
-
-/** Input for a grid, without fields that don't apply, so re-validating adds no warnings. */
-function toInput(g: LayoutGrid): LayoutGridInput {
-  if (g.pattern === 'GRID') {
-    return { pattern: 'GRID', sectionSize: g.sectionSize, visible: g.visible, color: g.color };
-  }
-  return {
-    pattern: g.pattern,
-    alignment: g.alignment,
-    count: g.count,
-    gutterSize: g.gutterSize,
-    ...(g.alignment === 'CENTER' ? {} : { offset: g.offset }),
-    ...(g.alignment === 'STRETCH' ? {} : { sectionSize: g.sectionSize }),
-    visible: g.visible,
-    color: g.color,
-  };
 }
 
 type Field = 'count' | 'sectionSize' | 'gutterSize' | 'offset' | 'opacity';
@@ -281,6 +289,7 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
       };
       const up = (): void => {
         head.classList.remove('dragging');
+        if (pos) store.savePosition(pos);
         head.removeEventListener('pointermove', move);
         head.removeEventListener('pointerup', up);
         head.removeEventListener('pointercancel', up);
@@ -304,7 +313,7 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
   };
 
   const shapeOf = (index: number, bp: Breakpoint | undefined): string =>
-    `${index}|${(bp?.grids ?? [])
+    `${index}|${store.hasSetAside()}|${(bp?.grids ?? [])
       .map((g) => (g.pattern === 'GRID' ? 'G' : `${g.pattern}:${g.alignment}`))
       .join(',')}`;
 
@@ -657,15 +666,107 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
     return block;
   };
 
+  const fullBadge = (bp: Breakpoint | undefined): string =>
+    `${badgeText(bp)}${store.isEdited() ? ' · Edited' : ''}`;
+
+  /** "Copy config" (0013): clipboard first, a selected text box if that fails. */
+  const footer = (): HTMLElement => {
+    const f = el('div', { class: 'footer' });
+    const copy = el(
+      'button',
+      { type: 'button', class: 'text-btn', 'data-key': 'copy' },
+      'Copy config',
+    );
+    const status = el('span', { class: 'status', 'aria-live': 'polite' });
+    let timer = 0;
+    copy.addEventListener(
+      'click',
+      async () => {
+        const text = store.snippet();
+        f.querySelector('textarea')?.remove();
+        f.querySelector('.note')?.remove();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('no clipboard');
+          await navigator.clipboard.writeText(text);
+          copy.textContent = 'Copied';
+          status.textContent = 'Config copied';
+          clearTimeout(timer);
+          timer = window.setTimeout(() => {
+            copy.textContent = 'Copy config';
+            status.textContent = '';
+          }, 1500);
+        } catch {
+          const note = el(
+            'p',
+            { class: 'note', id: 'ga-copy-note' },
+            'Copy failed. Select and copy the text below.',
+          );
+          const area = el('textarea', {
+            readonly: '',
+            'aria-label': 'Grid config',
+            'aria-describedby': 'ga-copy-note',
+            spellcheck: 'false',
+          }) as HTMLTextAreaElement;
+          area.value = text;
+          f.append(note, area);
+          area.focus({ preventScroll: true });
+          area.select();
+        }
+      },
+      { signal },
+    );
+    f.append(copy, status);
+    return f;
+  };
+
   const rebuild = (index: number, bp: Breakpoint | undefined): void => {
     const shadow = root.getRootNode() as ShadowRoot | Document;
     const focusedKey = (shadow.activeElement as HTMLElement | null)?.dataset?.key;
     const hadFocus = root.contains(shadow.activeElement);
     const indexChanged = index !== renderedIndex;
 
-    const badge = el('p', { class: 'badge', 'aria-live': 'polite' }, badgeText(bp));
+    const badge = el('p', { class: 'badge', 'aria-live': 'polite' }, fullBadge(bp));
+    const parts: HTMLElement[] = [badge];
+    if (store.hasSetAside()) {
+      const notice = el('div', { class: 'notice', role: 'status' });
+      notice.append(el('p', {}, "Your code's grid changed since your last edits."));
+      const row = el('div', { class: 'row' });
+      const restore = el(
+        'button',
+        { type: 'button', class: 'text-btn', 'data-key': 'restore' },
+        'Restore edits',
+      );
+      const discard = el(
+        'button',
+        { type: 'button', class: 'text-btn', 'data-key': 'discard' },
+        'Discard',
+      );
+      restore.addEventListener('click', () => store.restore(), { signal });
+      discard.addEventListener('click', () => store.discard(), { signal });
+      row.append(restore, discard);
+      notice.append(row);
+      parts.push(notice);
+    }
     const sh = el('div', { class: 'section-head' });
-    sh.append(el('h3', { id: 'ga-layout' }, 'Layout guides'));
+    sh.append(el('h3', { id: 'ga-layout', tabindex: '-1' }, 'Layout guides'));
+    {
+      const reset = el(
+        'button',
+        { type: 'button', class: 'text-btn', 'data-key': 'reset' },
+        'Reset to code',
+      );
+      reset.addEventListener(
+        'click',
+        () => {
+          store.reset();
+          body.querySelector<HTMLElement>('#ga-layout')?.focus({ preventScroll: true });
+        },
+        { signal },
+      );
+      // Always present, hidden until there are edits, so the first edit doesn't rebuild the panel.
+      reset.hidden = !store.isEdited();
+      sh.append(reset);
+    }
     const add = el('button', {
       type: 'button',
       'aria-label': 'Add grid',
@@ -690,7 +791,7 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
     });
     if (bp && bp.grids.length === 0)
       list.append(el('p', { class: 'empty' }, 'No grids. Add one with +.'));
-    body.replaceChildren(badge, sh, list);
+    body.replaceChildren(...parts, sh, list, footer());
     fieldErrors.clear();
 
     if (hadFocus) {
@@ -708,7 +809,9 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
     const shadow = root.getRootNode() as ShadowRoot | Document;
     const focused = shadow.activeElement;
     const badge = body.querySelector('.badge');
-    if (badge) badge.textContent = badgeText(bp);
+    if (badge) badge.textContent = fullBadge(bp);
+    const reset = body.querySelector<HTMLElement>('[data-key="reset"]');
+    if (reset) reset.hidden = !store.isEdited();
     bp.grids.forEach((g, j) => {
       const set = (field: string, value: string): void => {
         const input = body.querySelector<HTMLInputElement>(`[data-key="g${j}-${field}"]`);
@@ -758,6 +861,7 @@ export function createPanel(doc: Document, store: PanelStore, signal: AbortSigna
       root.hidden = !open;
       if (open) {
         sync('code');
+        if (!pos) pos = store.position();
         place();
       } else {
         const shadow = root.getRootNode() as ShadowRoot | Document;
