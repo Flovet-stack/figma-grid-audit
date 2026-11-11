@@ -1,6 +1,6 @@
 # Decision log
 
-The product team researches and makes every product, UX, UI and architecture decision for Figma Grid Audit, and Flovet approves each one. This folder records them, so that builds and reviews follow written decisions instead of chat history.
+The product team researches and makes every product, UX, UI and architecture decision for Grid Auditor, and Flovet approves each one. This folder records them, so that builds and reviews follow written decisions instead of chat history.
 
 ## Rules
 

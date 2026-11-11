@@ -15,7 +15,7 @@ const frames = async (n = 2) => {
   for (let i = 0; i < n; i++) await nextFrame();
 };
 
-const host = () => document.querySelector('figma-grid-audit');
+const host = () => document.querySelector('grid-auditor');
 const marks = (cls = 'section') =>
   Array.from(host()?.shadowRoot?.querySelectorAll<HTMLElement>(`.${cls}`) ?? []);
 const layerHidden = () =>
@@ -303,7 +303,7 @@ describe('8. lifecycle', () => {
     overlay = createGridOverlay(PLAYGROUND);
     expect(createGridOverlay(PLAYGROUND)).toBe(overlay);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('already exists'));
-    expect(document.querySelectorAll('figma-grid-audit')).toHaveLength(1);
+    expect(document.querySelectorAll('grid-auditor')).toHaveLength(1);
     overlay.destroy();
     expect(host()).toBeNull();
     expect(() => keydown(document.body, { shiftKey: true })).not.toThrow();
@@ -349,7 +349,7 @@ describe('9. errors', () => {
       breakpoints: [{ minWidth: 0, grids: [{ pattern: 'COLUMNS', count: 2, sectionSize: 10 }] }],
     });
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('[figma-grid-audit] [0].grids[0].sectionSize'),
+      expect.stringContaining('[grid-auditor] [0].grids[0].sectionSize'),
     );
     warn.mockRestore();
   });

@@ -1,4 +1,4 @@
-# Figma Grid Audit: agent instructions
+# Grid Auditor: agent instructions
 
 ## Before any task
 

@@ -3,7 +3,7 @@
  * check (scripts/check-prod-exclusion.mjs) fails if it shows up in a
  * consumer's production bundle.
  */
-export const MARKER: string = '__FIGMA_GRID_AUDIT__';
+export const MARKER: string = '__GRID_AUDITOR__';
 
 export const version: string = '0.0.0';
 

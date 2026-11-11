@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const MARKER = '__FIGMA_GRID_AUDIT__';
+const MARKER = '__GRID_AUDITOR__';
 const outDir = 'playground/dist';
 
 execSync('pnpm --filter playground build', { stdio: 'inherit' });

@@ -1,7 +1,7 @@
 {
-  "name": "figma-grid-audit",
+  "name": "grid-auditor",
   "version": "0.0.0",
-  "description": "Dev-only browser overlay that compares the expected Figma layout grid with the grid your page actually rendered.",
+  "description": "Dev-only web overlay that compares the expected design layout grid (columns, rows, squares as in Figma) with the grid your page actually rendered. Not affiliated with Figma.",
   "license": "MIT",
   "author": "Flovet Asong",
   "type": "module",
