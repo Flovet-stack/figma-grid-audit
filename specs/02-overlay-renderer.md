@@ -1,6 +1,6 @@
 # 02: Overlay renderer
 
-Status: In progress (amendment A1 for 0010; the original scope was done 2026-11-11)
+Status: Done (original scope and A1: https://github.com/Flovet-stack/grid-auditor/pull/3)
 
 Brief: features #1 (expected grid overlay), #2 (responsive breakpoints) and #25 (client-only), plus the first part of #19 (the toggle shortcut). This is the first spec a user can actually see.
 

@@ -1,6 +1,6 @@
 # 03: Control panel: grid settings
 
-Status: Ready (approved by Flovet 2026-11-11, including the API in "Opening and placement" and focus staying on the page)
+Status: Done (https://github.com/Flovet-stack/grid-auditor/pull/4)
 
 Brief: feature #20 (floating control panel), the **Layout guides** section only, and the second part of #19 (`Ctrl/Cmd+Shift+G` opens the panel). This is the first time a user can set and change grids on the page without touching code.
 
