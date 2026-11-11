@@ -10,7 +10,7 @@ One file per task: `NN-short-name.md`, small enough for one agent session. Forma
 
 | #   | Spec                                                 | Implements       |
 | --- | ---------------------------------------------------- | ---------------- |
-| 00  | [Foundations](00-foundations.md) (Done)             | 0001, 0003, 0004 |
+| 00  | [Foundations](00-foundations.md) (Done)              | 0001, 0003, 0004 |
 | 01  | Grid engine: pure Figma-parity math + unit tests     | 0002             |
 | 02  | Overlay renderer + toggle + playground browser tests | 0002, 0003       |
 | 03  | First release 0.1.0                                  | 0003, 0004       |
