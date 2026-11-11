@@ -1,0 +1,44 @@
+/* Reference layout: centred 1200px container, 12-column CSS Grid, 24px gutter. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font:
+    16px / 1.5 system-ui,
+    sans-serif;
+  background: #fafafa;
+  color: #1a1a1a;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+.box {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 120px;
+}
+.span-12 {
+  grid-column: span 12;
+}
+.span-8 {
+  grid-column: span 8;
+}
+.span-4 {
+  grid-column: span 4;
+}
+@media (max-width: 768px) {
+  .span-8,
+  .span-4 {
+    grid-column: span 12;
+  }
+}
