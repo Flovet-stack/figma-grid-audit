@@ -4,7 +4,7 @@
 - **Proposed:** 2026-11-11 by the product team (roles: Tech Lead, Project Manager, Product, UX, Copy, Frontend)
 - **Approved:** 2026-11-11 by Flovet
 - **Supersedes:** none
-- **Specs:** none yet (spec 04)
+- **Specs:** specs/04-persist-panel-edits.md
 
 ## Context
 
