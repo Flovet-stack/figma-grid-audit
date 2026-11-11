@@ -1,6 +1,6 @@
 # 02: Overlay renderer
 
-Status: Ready
+Status: Done (2026-11-11)
 
 Brief: features #1 (expected grid overlay), #2 (responsive breakpoints) and #25 (client-only), plus the first part of #19 (the toggle shortcut). This is the first spec a user can actually see.
 

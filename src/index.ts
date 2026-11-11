@@ -6,3 +6,13 @@
 export const MARKER: string = '__FIGMA_GRID_AUDIT__';
 
 export const version: string = '0.0.0';
+
+export type {
+  Alignment,
+  BreakpointInput,
+  Count,
+  LayoutGridInput,
+  Pattern,
+} from './engine/types';
+export { createGridOverlay, type GridOverlay, type GridOverlayOptions } from './overlay/create';
+export type { ToggleShortcut } from './overlay/shortcuts';
