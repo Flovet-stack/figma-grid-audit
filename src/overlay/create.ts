@@ -29,8 +29,8 @@ export interface GridOverlay {
   destroy(): void;
 }
 
-const PREFIX = '[figma-grid-audit]';
-const HOST_TAG = 'figma-grid-audit';
+const PREFIX = '[grid-auditor]';
+const HOST_TAG = 'grid-auditor';
 
 let current: GridOverlay | undefined;
 

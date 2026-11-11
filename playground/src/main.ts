@@ -1,7 +1,7 @@
 // Decision 0004: the consumer gates the library behind a dev-only dynamic
 // import, so production builds contain none of it.
 if (import.meta.env.DEV) {
-  const { createGridOverlay } = await import('figma-grid-audit');
+  const { createGridOverlay } = await import('grid-auditor');
   // Matches style.css: a 1200 px container with 24 px padding and a 12-column, 24 px gap grid.
   createGridOverlay({
     breakpoints: [

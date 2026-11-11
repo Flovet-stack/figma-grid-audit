@@ -1,5 +1,5 @@
 if (import.meta.env.DEV) {
-  const { createGridOverlay } = await import('figma-grid-audit');
+  const { createGridOverlay } = await import('grid-auditor');
   createGridOverlay({
     breakpoints: [
       {

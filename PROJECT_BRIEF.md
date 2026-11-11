@@ -1,4 +1,4 @@
-# Project brief: Figma Grid Audit
+# Project brief: Grid Auditor
 
 Last updated: 2026-11-11
 
@@ -111,6 +111,8 @@ References are for inspiration only: never copy their logos, names, icons, illus
 ## Decisions (newest first)
 
 Product-wide decisions only. Every decision, with its research, is logged in `docs/decisions/`.
+
+- 2026-11-11: Product renamed from "Figma Grid Audit" to **Grid Auditor** (`grid-auditor`): Figma's trademark rules forbid "Figma" in a tool's name. We say "works with Figma layout grids" and "not affiliated with Figma" (0008).
 
 - 2026-11-11: Design system approved (`docs/design/design-brief.md`, 0005): Figma's behaviour with our own neutral chrome; expected grid filled red, rendered grid dashed blue-violet, deviations magenta with px labels; Shift+G toggles the grid.
 - 2026-11-11: Feature scope set to GuideFrame parity plus expected-vs-rendered comparison.

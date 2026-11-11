@@ -44,7 +44,7 @@ importers:
 
   playground:
     dependencies:
-      figma-grid-audit:
+      grid-auditor:
         specifier: workspace:*
         version: link:..
     devDependencies:

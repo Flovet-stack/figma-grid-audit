@@ -1,10 +1,10 @@
-# Figma Grid Audit design brief
+# Grid Auditor design brief
 
 - **Status:** Approved (decision [0005](../decisions/0005-figma-native-interaction-and-visual-language.md), 2026-11-11).
 - **Written:** 2026-11-11 by the product team (roles: Product, UX, UI, Copy, Frontend, Tech Lead)
 - **Decisions:** [0005 Figma-native interaction and visual language](../decisions/0005-figma-native-interaction-and-visual-language.md)
 
-This brief describes how Figma Grid Audit should look, feel and behave, and why. `PROJECT_BRIEF.md` stays the source of truth for scope. Decision 0005 holds the research. This file shows how the pieces fit.
+This brief describes how Grid Auditor should look, feel and behave, and why. `PROJECT_BRIEF.md` stays the source of truth for scope. Decision 0005 holds the research. This file shows how the pieces fit.
 
 ## How this brief is structured
 

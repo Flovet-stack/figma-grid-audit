@@ -3,7 +3,7 @@
   "compilerOptions": {
     "types": ["vite/client", "node"],
     "isolatedDeclarations": false,
-    "paths": { "figma-grid-audit": ["../src/index.ts"] }
+    "paths": { "grid-auditor": ["../src/index.ts"] }
   },
   "include": ["src", "vite.config.ts"]
 }

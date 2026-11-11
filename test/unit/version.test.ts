@@ -8,6 +8,6 @@ describe('package entry', () => {
   });
 
   it('exports the production-exclusion marker', () => {
-    expect(MARKER).toBe('__FIGMA_GRID_AUDIT__');
+    expect(MARKER).toBe('__GRID_AUDITOR__');
   });
 });
