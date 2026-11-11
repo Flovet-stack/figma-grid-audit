@@ -55,8 +55,8 @@ describe('computeSections', () => {
     const g = grid({ pattern: 'ROWS', count: 2, gutterSize: 10 });
     const { sections } = computeSections(g, { width: 9999, height: 210 });
     expect(sections).toEqual([
-      { index: 0, start: 0, size: 100 },
-      { index: 1, start: 110, size: 100 },
+      { index: 0, start: 0, size: 100, snappedStart: 0, snappedEnd: 100 },
+      { index: 1, start: 110, size: 100, snappedStart: 110, snappedEnd: 210 },
     ]);
   });
 

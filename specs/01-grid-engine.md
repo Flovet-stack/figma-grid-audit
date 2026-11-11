@@ -1,6 +1,6 @@
 # 01: Grid engine
 
-Status: Built (2026-11-11), waiting for the Figma proof
+Status: Done (2026-11-11; Figma proof passed, see test/unit/engine/figma-proof.test.ts)
 
 Brief: features #1 (expected grid with full Figma parity) and #2 (responsive breakpoints). This spec covers only the maths: no DOM, no rendering.
 
@@ -10,7 +10,7 @@ Given a set of layout grids written in Figma's terms and a container size, retur
 
 ## Decisions
 
-Implements 0002 (pure engine in `src/engine/`, no DOM). Uses 0005's vocabulary (the design brief, §8 and §9.1, for names and defaults).
+Implements 0002 and 0006 (pure engine in `src/engine/`, no DOM). Uses 0005's vocabulary (the design brief, §8 and §9.1, for names and defaults).
 
 ## Figma model (verified 2026-11-11)
 
@@ -47,7 +47,7 @@ Sources: Figma Plugin API `LayoutGrid` (https://developers.figma.com/docs/plugin
   - **`count: 'auto'`** (fixed alignments only): `n = floor((A + gutter) / (sectionSize + gutter))`, where the available length `A` is `L − offset` for MIN and MAX, and `L` for CENTER. `count: 'auto'` with `STRETCH` is a validation error (Figma needs a section size to fit columns automatically, and STRETCH has none).
   - `L` is `box.width` for columns and `box.height` for rows.
 - [ ] `computeSquares(grid, box)` for `GRID` returns `{ xs: number[]; ys: number[] }`, the line positions every `sectionSize` px starting at 0 and ending at or before the box edge (assumption: Figma's square grid is anchored at the frame's top-left; the Figma proof checks this too).
-- [ ] No rounding. Values stay as floats, and the renderer (spec 02) decides how to snap them to pixels.
+- [ ] Pixel snapping and clipping follow 0006: each section keeps exact `start` and `size`, plus `snappedStart` and `snappedEnd` (`Math.ceil(v − 0.5)`). `clipSections(sections, L)` returns only the visible parts, clipped to `[0, L]`. Square-grid lines are snapped the same way.
 - [ ] Overflow is not an error. If fixed sections don't fit, they are returned as they are, even outside the box. **Assumption to verify in the Figma proof:** Figma draws overflowing fixed sections rather than clipping or hiding them; add a fourth frame to the proof for this. A `STRETCH` grid whose computed size is ≤ 0 returns `[]` with a warning.
 
 ### Breakpoints: `src/engine/breakpoints.ts`
@@ -95,7 +95,7 @@ Sources: Figma Plugin API `LayoutGrid` (https://developers.figma.com/docs/plugin
 
 - Always: pure functions, `readonly` inputs, no mutation, and full types with no `any`.
 - Ask first: any runtime dependency, or any public export from `src/index.ts`.
-- Never: DOM access in `src/engine/`, or rounding inside the engine.
+- Never: DOM access in `src/engine/`, or rounding any other way than 0006.
 
 ## Check
 

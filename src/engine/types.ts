@@ -48,6 +48,15 @@ export interface Section {
   /** Position along the grid's axis, in px from the container's start edge. */
   readonly start: number;
   readonly size: number;
+  /** Start and end edges snapped to whole pixels as Figma draws them (0006). */
+  readonly snappedStart: number;
+  readonly snappedEnd: number;
+}
+
+/** A section clipped to its container (0006). */
+export interface VisibleSection extends Section {
+  readonly visibleStart: number;
+  readonly visibleEnd: number;
 }
 
 export interface Breakpoint {
