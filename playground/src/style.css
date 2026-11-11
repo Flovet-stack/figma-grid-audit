@@ -1,4 +1,4 @@
-/* Reference layout: centred 1200px container, 12-column CSS Grid, 24px gutter. */
+/* Reference layout matching the default breakpoints (0010): 4 / 8 / 12 columns. */
 *,
 *::before,
 *::after {
@@ -13,12 +13,10 @@ body {
   color: #1a1a1a;
 }
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 48px 24px;
+  padding: 48px 16px;
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 .box {
   background: #fff;
@@ -27,18 +25,27 @@ body {
   padding: 24px;
   min-height: 120px;
 }
-.span-12 {
-  grid-column: span 12;
-}
-.span-8 {
-  grid-column: span 8;
-}
+.span-12,
+.span-8,
 .span-4 {
-  grid-column: span 4;
+  grid-column: 1 / -1;
 }
-@media (max-width: 768px) {
-  .span-8,
+@media (min-width: 768px) {
+  .container {
+    padding: 48px 24px;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 24px;
+  }
   .span-4 {
-    grid-column: span 12;
+    grid-column: span 4;
+  }
+}
+@media (min-width: 1200px) {
+  .container {
+    padding: 48px 80px;
+    grid-template-columns: repeat(12, 1fr);
+  }
+  .span-8 {
+    grid-column: span 8;
   }
 }

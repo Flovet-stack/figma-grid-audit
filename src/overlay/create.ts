@@ -2,8 +2,10 @@
 import {
   type Box,
   type Breakpoint,
-  type BreakpointInput,
+  type BreakpointEntry,
+  DEFAULT_BREAKPOINTS,
   type GridWarning,
+  mergeBreakpoints,
   normalizeBreakpoints,
   pickBreakpoint,
 } from '../engine';
@@ -11,7 +13,13 @@ import { renderBreakpoint, STYLES } from './render';
 import { isFromEditable, matchesToggle, type ToggleShortcut } from './shortcuts';
 
 export interface GridOverlayOptions {
-  readonly breakpoints: readonly BreakpointInput[];
+  /**
+   * Edits to the default breakpoints, or new ones (0010). An entry whose `name`
+   * matches a default (Mobile, Tablet, Desktop) edits it; a new name adds one.
+   */
+  readonly breakpoints?: readonly BreakpointEntry[];
+  /** Merge `breakpoints` into the defaults. Default `true`; `false` uses only yours. */
+  readonly extendDefaults?: boolean;
   /** Show the grid straight away. Default `true`. */
   readonly visible?: boolean;
   readonly shortcuts?: {
@@ -26,6 +34,11 @@ export interface GridOverlay {
   toggle(): void;
   isVisible(): boolean;
   update(options: GridOverlayOptions): void;
+  /** Replaces the breakpoints live, with the same merge rules. Throws (and keeps the old grid) if invalid. */
+  setBreakpoints(
+    breakpoints: readonly BreakpointEntry[],
+    options?: { readonly extendDefaults?: boolean },
+  ): void;
   destroy(): void;
 }
 
@@ -40,14 +53,21 @@ interface State {
   visible: boolean;
 }
 
-function parse(options: GridOverlayOptions): { breakpoints: readonly Breakpoint[] } {
-  const r = normalizeBreakpoints(options.breakpoints);
+function fail(errors: readonly { field: string; message: string }[]): never {
+  const lines = errors.map((e) => `- breakpoints${e.field}: ${e.message}`);
+  throw new Error(`${PREFIX} The options need a few fixes:\n${lines.join('\n')}`);
+}
+
+function parse(
+  entries: readonly BreakpointEntry[] | undefined,
+  extendDefaults: boolean | undefined,
+): readonly Breakpoint[] {
+  const merged = mergeBreakpoints(DEFAULT_BREAKPOINTS, entries, extendDefaults ?? true);
+  if (!merged.ok) fail(merged.errors);
+  const r = normalizeBreakpoints(merged.value);
   reportWarnings(r.warnings);
-  if (!r.ok) {
-    const lines = r.errors.map((e) => `- breakpoints${e.field}: ${e.message}`);
-    throw new Error(`${PREFIX} The options need a few fixes:\n${lines.join('\n')}`);
-  }
-  return { breakpoints: r.value };
+  if (!r.ok) fail(r.errors);
+  return r.value;
 }
 
 function reportWarnings(warnings: readonly GridWarning[]): void {
@@ -60,6 +80,7 @@ const noop: GridOverlay = {
   toggle() {},
   isVisible: () => false,
   update() {},
+  setBreakpoints() {},
   destroy() {},
 };
 
@@ -73,7 +94,7 @@ function measurePage(doc: Document): Box {
  * Draws the expected Figma layout grid over the page. Calling it again while
  * an overlay exists updates and returns that same overlay.
  */
-export function createGridOverlay(options: GridOverlayOptions): GridOverlay {
+export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay {
   if (typeof window === 'undefined' || typeof document === 'undefined') return noop;
   if (current) {
     console.warn(`${PREFIX} An overlay already exists; updating it instead of creating another.`);
@@ -82,7 +103,7 @@ export function createGridOverlay(options: GridOverlayOptions): GridOverlay {
   }
 
   const state: State = {
-    ...parse(options),
+    breakpoints: parse(options.breakpoints, options.extendDefaults),
     toggle: options.shortcuts?.toggle ?? 'Shift+G',
     visible: options.visible ?? true,
   };
@@ -167,9 +188,14 @@ export function createGridOverlay(options: GridOverlayOptions): GridOverlay {
     isVisible: () => state.visible,
     update(next) {
       if (destroyed) return;
-      state.breakpoints = parse(next).breakpoints;
+      state.breakpoints = parse(next.breakpoints, next.extendDefaults);
       state.toggle = next.shortcuts?.toggle ?? 'Shift+G';
       if (next.visible !== undefined) state.visible = next.visible;
+      schedule(true);
+    },
+    setBreakpoints(breakpoints, opts) {
+      if (destroyed) return;
+      state.breakpoints = parse(breakpoints, opts?.extendDefaults);
       schedule(true);
     },
     destroy() {

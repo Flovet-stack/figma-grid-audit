@@ -1,6 +1,7 @@
 if (import.meta.env.DEV) {
   const { createGridOverlay } = await import('grid-auditor');
   createGridOverlay({
+    extendDefaults: false,
     breakpoints: [
       {
         minWidth: 0,
