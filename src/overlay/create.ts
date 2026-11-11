@@ -4,13 +4,22 @@ import {
   type Breakpoint,
   type BreakpointEntry,
   DEFAULT_BREAKPOINTS,
+  type GridError,
   type GridWarning,
+  type LayoutGridInput,
   mergeBreakpoints,
   normalizeBreakpoints,
   pickBreakpoint,
 } from '../engine';
+import { createPanel, PANEL_STYLES } from './panel';
 import { renderBreakpoint, STYLES } from './render';
-import { isFromEditable, matchesToggle, type ToggleShortcut } from './shortcuts';
+import {
+  isFromEditable,
+  matchesPanel,
+  matchesToggle,
+  type PanelShortcut,
+  type ToggleShortcut,
+} from './shortcuts';
 
 export interface GridOverlayOptions {
   /**
@@ -25,6 +34,8 @@ export interface GridOverlayOptions {
   readonly shortcuts?: {
     /** Default `'Shift+G'` (Figma's shortcut). `'Mod+G'` is Cmd/Ctrl+G; `false` turns it off. */
     readonly toggle?: ToggleShortcut;
+    /** Default `'Mod+Shift+G'` (Cmd/Ctrl+Shift+G) opens the control panel; `false` turns it off. */
+    readonly panel?: PanelShortcut;
   };
 }
 
@@ -39,6 +50,10 @@ export interface GridOverlay {
     breakpoints: readonly BreakpointEntry[],
     options?: { readonly extendDefaults?: boolean },
   ): void;
+  /** Opens the control panel (spec 03). Focus stays where it is. */
+  openPanel(): void;
+  closePanel(): void;
+  isPanelOpen(): boolean;
   destroy(): void;
 }
 
@@ -50,6 +65,7 @@ let current: GridOverlay | undefined;
 interface State {
   breakpoints: readonly Breakpoint[];
   toggle: ToggleShortcut;
+  panel: PanelShortcut;
   visible: boolean;
 }
 
@@ -81,6 +97,9 @@ const noop: GridOverlay = {
   isVisible: () => false,
   update() {},
   setBreakpoints() {},
+  openPanel() {},
+  closePanel() {},
+  isPanelOpen: () => false,
   destroy() {},
 };
 
@@ -105,11 +124,11 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
   const state: State = {
     breakpoints: parse(options.breakpoints, options.extendDefaults),
     toggle: options.shortcuts?.toggle ?? 'Shift+G',
+    panel: options.shortcuts?.panel ?? 'Mod+Shift+G',
     visible: options.visible ?? true,
   };
 
   const host = document.createElement(HOST_TAG);
-  host.setAttribute('aria-hidden', 'true');
   for (const [prop, value] of [
     ['position', 'fixed'],
     ['inset', '0'],
@@ -123,23 +142,66 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
   }
   const shadow = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
-  style.textContent = STYLES;
+  style.textContent = STYLES + PANEL_STYLES;
   const layer = document.createElement('div');
   layer.className = 'layer';
-  shadow.append(style, layer);
-  document.documentElement.append(host);
+  layer.setAttribute('aria-hidden', 'true');
 
   const controller = new AbortController();
   const { signal } = controller;
   let frame = 0;
   let needsRender = true;
   let lastWarnings = '';
+  let activeIndex = -1;
+
+  const activeOf = (): number => {
+    const bp = pickBreakpoint(window.innerWidth, state.breakpoints);
+    return bp ? state.breakpoints.indexOf(bp) : -1;
+  };
+
+  const panel = createPanel(
+    document,
+    {
+      breakpoints: () => state.breakpoints,
+      activeIndex: () => activeIndex,
+      setGrids(index, grids): readonly GridError[] {
+        const bp = state.breakpoints[index];
+        if (!bp || destroyed) return [];
+        const r = normalizeBreakpoints([
+          {
+            minWidth: bp.minWidth,
+            grids: grids as LayoutGridInput[],
+            ...(bp.name === undefined ? {} : { name: bp.name }),
+          },
+        ]);
+        if (!r.ok) return r.errors;
+        const next = [...state.breakpoints];
+        next[index] = r.value[0] as Breakpoint;
+        state.breakpoints = next;
+        schedule(true);
+        panel.sync('panel');
+        return [];
+      },
+      isVisible: () => state.visible,
+      setVisible: (v) => (v ? overlay.show() : overlay.hide()),
+      close: () => overlay.closePanel(),
+      box: () => measurePage(document),
+    },
+    signal,
+  );
+  shadow.append(style, layer, panel.element);
+  document.documentElement.append(host);
 
   const flush = (): void => {
     frame = 0;
     if (needsRender) {
       needsRender = false;
-      const bp = pickBreakpoint(window.innerWidth, state.breakpoints);
+      const index = activeOf();
+      const bp = state.breakpoints[index];
+      if (index !== activeIndex) {
+        activeIndex = index;
+        panel.sync('resize');
+      }
       const warnings = renderBreakpoint(layer, bp, measurePage(document));
       const key = JSON.stringify(warnings);
       if (key !== lastWarnings) {
@@ -155,12 +217,26 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     if (frame === 0) frame = requestAnimationFrame(flush);
   };
 
-  window.addEventListener('resize', () => schedule(true), { signal });
+  window.addEventListener(
+    'resize',
+    () => {
+      schedule(true);
+      panel.clamp();
+    },
+    { signal },
+  );
   window.addEventListener('scroll', () => schedule(false), { signal, passive: true });
   window.addEventListener(
     'keydown',
     (event) => {
-      if (!matchesToggle(event, state.toggle) || isFromEditable(event)) return;
+      if (isFromEditable(event)) return;
+      if (matchesPanel(event, state.panel)) {
+        event.preventDefault();
+        if (panel.isOpen()) overlay.closePanel();
+        else overlay.openPanel();
+        return;
+      }
+      if (!matchesToggle(event, state.toggle)) return;
       if (state.toggle === 'Mod+G') event.preventDefault();
       overlay.toggle();
     },
@@ -176,28 +252,45 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     show() {
       state.visible = true;
       schedule(false);
+      panel.sync('panel');
     },
     hide() {
       state.visible = false;
       schedule(false);
+      panel.sync('panel');
     },
     toggle() {
       state.visible = !state.visible;
       schedule(false);
+      panel.sync('panel');
     },
     isVisible: () => state.visible,
     update(next) {
       if (destroyed) return;
       state.breakpoints = parse(next.breakpoints, next.extendDefaults);
       state.toggle = next.shortcuts?.toggle ?? 'Shift+G';
+      state.panel = next.shortcuts?.panel ?? 'Mod+Shift+G';
       if (next.visible !== undefined) state.visible = next.visible;
+      activeIndex = activeOf();
       schedule(true);
+      panel.sync('code');
     },
     setBreakpoints(breakpoints, opts) {
       if (destroyed) return;
       state.breakpoints = parse(breakpoints, opts?.extendDefaults);
+      activeIndex = activeOf();
       schedule(true);
+      panel.sync('code');
     },
+    openPanel() {
+      if (destroyed) return;
+      panel.setOpen(true);
+    },
+    closePanel() {
+      if (destroyed) return;
+      panel.setOpen(false);
+    },
+    isPanelOpen: () => panel.isOpen(),
     destroy() {
       if (destroyed) return;
       destroyed = true;
