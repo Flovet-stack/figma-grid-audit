@@ -63,7 +63,7 @@ Tags: **[ref]** = a feature GuideFrame has (https://guide-frame.vercel.app/), wh
 
 **Controls**
 
-19. Toggle the overlay with Cmd/Ctrl+G, and open the floating control panel with Cmd/Ctrl+Shift+G. **[ref]**
+19. Toggle the overlay with Shift+G (Figma's shortcut; Cmd/Ctrl+G as an opt-in, decision 0005), and open the floating control panel with Cmd/Ctrl+Shift+G. **[ref]**
 20. Floating control panel: switches for each layer, snapping options, grid settings and a shortcut reference. **[ref]**
 21. Mini toolbar showing the state of each layer: grid, rulers, guides, inspector and lock. **[ref]**
 
@@ -112,6 +112,7 @@ References are for inspiration only: never copy their logos, names, icons, illus
 
 Product-wide decisions only. Every decision, with its research, is logged in `docs/decisions/`.
 
+- 2026-11-11: Design system approved (`docs/design/design-brief.md`, 0005): Figma's behaviour with our own neutral chrome; expected grid filled red, rendered grid dashed blue-violet, deviations magenta with px labels; Shift+G toggles the grid.
 - 2026-11-11: Feature scope set to GuideFrame parity plus expected-vs-rendered comparison.
 - 2026-11-11: Remove the current untested code and rebuild in phases (0001); pure engine with a single store and a vanilla API (0002); tooling (0003); production exclusion handled by the consumer (0004).
 
