@@ -14,7 +14,7 @@ One file per task: `NN-short-name.md`, small enough for one agent session. Forma
 | 01  | [Grid engine](01-grid-engine.md) (Done)                    | 0002                   |
 | 02  | [Overlay renderer](02-overlay-renderer.md) (Done)          | 0002, 0004–0007, 0010  |
 | 03  | [Control panel: grid settings](03-control-panel.md) (Done) | 0002, 0005, 0010, 0012 |
-| 04  | [Persist panel edits](04-persist-panel-edits.md) (Ready)   | 0012, 0013             |
+| 04  | [Persist panel edits](04-persist-panel-edits.md) (Done)    | 0012, 0013             |
 | 05  | Geometry inspector                                         | 0005, 0006, 0011       |
 | 06  | Page comparison (expected vs element edges)                | 0005, 0011             |
 | 07  | Container layout overlay (grid tracks, flex gaps)          | 0005, 0011             |

@@ -1,6 +1,6 @@
 # 04: Persist panel edits
 
-Status: Ready (approved by Flovet 2026-11-11)
+Status: Done (https://github.com/Flovet-stack/grid-auditor/pull/6)
 
 Brief: completes feature #20 (control panel) by making edits last. It builds on spec 03.
 
