@@ -12,6 +12,7 @@ import {
   pickBreakpoint,
 } from '../engine';
 import { createPanel, PANEL_STYLES } from './panel';
+import { fingerprint, type Position, type Stored, safeStorage, snippet, toInputs } from './persist';
 import { renderBreakpoint, STYLES } from './render';
 import {
   isFromEditable,
@@ -29,6 +30,11 @@ export interface GridOverlayOptions {
   readonly breakpoints?: readonly BreakpointEntry[];
   /** Merge `breakpoints` into the defaults. Default `true`; `false` uses only yours. */
   readonly extendDefaults?: boolean;
+  /**
+   * Keep panel edits across reloads while the code config is unchanged (0013). Default `true`;
+   * `false` never reads or writes storage.
+   */
+  readonly persist?: boolean;
   /** Show the grid straight away. Default `true`. */
   readonly visible?: boolean;
   readonly shortcuts?: {
@@ -128,6 +134,71 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     visible: options.visible ?? true,
   };
 
+  // ----- persistence (0013, spec 04) -----
+  let persist = options.persist ?? true;
+  let codeBreakpoints = state.breakpoints;
+  let codeFingerprint = fingerprint(codeBreakpoints);
+  let edited = false;
+  let setAside: { fingerprint: string; breakpoints: readonly Breakpoint[] } | undefined;
+  let position: Position | undefined;
+  let warnedStorage = false;
+  const storage = safeStorage(
+    () => window.localStorage,
+    (error) => {
+      if (warnedStorage) return;
+      warnedStorage = true;
+      console.warn(
+        `${PREFIX} Panel edits can't be saved (${String(error)}). They last until reload.`,
+      );
+    },
+  );
+  const load = (): void => {
+    edited = false;
+    setAside = undefined;
+    position = undefined;
+    if (!persist) return;
+    const parsed = storage.read();
+    if (!parsed) return;
+    position = parsed.stored.panel;
+    if (!parsed.breakpoints) return;
+    if (parsed.stored.fingerprint === codeFingerprint) {
+      state.breakpoints = parsed.breakpoints;
+      edited = true;
+    } else {
+      setAside = { fingerprint: parsed.stored.fingerprint, breakpoints: parsed.breakpoints };
+    }
+  };
+  let saveQueued = false;
+  const writeNow = (): void => {
+    saveQueued = false;
+    if (!persist || destroyed) return;
+    const base = edited
+      ? { fingerprint: codeFingerprint, breakpoints: toInputs(state.breakpoints) }
+      : setAside
+        ? { fingerprint: setAside.fingerprint, breakpoints: toInputs(setAside.breakpoints) }
+        : { fingerprint: codeFingerprint };
+    if (!('breakpoints' in base) && !position) {
+      storage.clear();
+      return;
+    }
+    const entry: Stored = { version: 1, ...base, ...(position ? { panel: position } : {}) };
+    storage.write(entry);
+  };
+  const save = (): void => {
+    if (!persist || saveQueued) return;
+    saveQueued = true;
+    requestAnimationFrame(writeNow);
+  };
+  /** A code call replaced the config: drop edits (0013) and keep only the panel position. */
+  const adoptCode = (): void => {
+    codeBreakpoints = state.breakpoints;
+    codeFingerprint = fingerprint(codeBreakpoints);
+    edited = false;
+    setAside = undefined;
+    save();
+  };
+  load();
+
   const host = document.createElement(HOST_TAG);
   for (const [prop, value] of [
     ['position', 'fixed'],
@@ -178,9 +249,42 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
         const next = [...state.breakpoints];
         next[index] = r.value[0] as Breakpoint;
         state.breakpoints = next;
+        edited = true;
+        save();
         schedule(true);
         panel.sync('panel');
         return [];
+      },
+      isEdited: () => edited,
+      hasSetAside: () => setAside !== undefined,
+      restore() {
+        if (!setAside) return;
+        state.breakpoints = setAside.breakpoints;
+        setAside = undefined;
+        edited = true;
+        save();
+        activeIndex = activeOf();
+        schedule(true);
+        panel.sync('code');
+      },
+      discard() {
+        setAside = undefined;
+        save();
+        panel.sync('code');
+      },
+      reset() {
+        state.breakpoints = codeBreakpoints;
+        edited = false;
+        save();
+        activeIndex = activeOf();
+        schedule(true);
+        panel.sync('code');
+      },
+      snippet: () => snippet(state.breakpoints),
+      position: () => position,
+      savePosition(p) {
+        position = p;
+        save();
       },
       isVisible: () => state.visible,
       setVisible: (v) => (v ? overlay.show() : overlay.hide()),
@@ -281,6 +385,8 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     update(next) {
       if (destroyed) return;
       state.breakpoints = parse(next.breakpoints, next.extendDefaults);
+      if (next.persist !== undefined) persist = next.persist;
+      adoptCode();
       state.toggle = next.shortcuts?.toggle ?? 'Shift+G';
       state.panel = next.shortcuts?.panel ?? 'Mod+Shift+G';
       if (next.visible !== undefined) state.visible = next.visible;
@@ -291,6 +397,7 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     setBreakpoints(breakpoints, opts) {
       if (destroyed) return;
       state.breakpoints = parse(breakpoints, opts?.extendDefaults);
+      adoptCode();
       activeIndex = activeOf();
       schedule(true);
       panel.sync('code');
@@ -306,6 +413,7 @@ export function createGridOverlay(options: GridOverlayOptions = {}): GridOverlay
     isPanelOpen: () => panel.isOpen(),
     destroy() {
       if (destroyed) return;
+      if (saveQueued) writeNow();
       destroyed = true;
       controller.abort();
       observer.disconnect();

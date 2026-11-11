@@ -46,6 +46,7 @@ let fixture: HTMLElement;
 let style: HTMLStyleElement;
 
 beforeEach(() => {
+  localStorage.clear();
   style = document.createElement('style');
   style.textContent = 'html, body { margin: 0; padding: 0; }';
   document.head.append(style);

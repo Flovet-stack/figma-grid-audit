@@ -55,7 +55,10 @@ createGridOverlay({
 Press **Ctrl+Shift+G** (**Cmd+Shift+G** on Mac) to open the panel. It shows the active breakpoint and lets you edit its grids the way Figma's Layout guides section does: type, count, alignment, width, gutter, margin or offset, colour and opacity. You can also add, remove, show and hide grids. Changes appear straight away.
 
 - Arrow keys change a value by 1, and Shift+arrow by 10. Enter or leaving the field applies it.
-- Panel edits are lost on reload for now. Calling `update()` or `setBreakpoints()` from code replaces them.
+- **Edits are saved** in `localStorage` and come back after a reload, as long as your code's grid config hasn't changed. The badge then ends with "Edited". If you change the grid in code, the panel offers to restore or discard the old edits instead of applying them.
+- **Reset to code** drops your edits. Calling `update()` or `setBreakpoints()` from code also replaces and clears them.
+- **Copy config** copies a `createGridOverlay({ ... })` call that reproduces exactly what's on screen, ready to paste into your code.
+- `persist: false` turns saving off, so nothing is read from or written to storage.
 - `overlay.openPanel()`, `overlay.closePanel()` and `overlay.isPanelOpen()` control it from code.
 - `shortcuts: { panel: false }` turns the shortcut off.
 
