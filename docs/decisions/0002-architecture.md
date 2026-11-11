@@ -4,7 +4,7 @@
 - **Proposed:** 2026-11-11 by the product team (roles: Tech Lead, Frontend, UX)
 - **Approved:** 2026-11-11 by Flovet
 - **Supersedes:** none
-- **Specs:**
+- **Specs:** specs/01-grid-engine.md
 
 ## Context
 
